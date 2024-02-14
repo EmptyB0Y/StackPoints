@@ -1,0 +1,4 @@
+name: StackPoints
+version: '${project.version}'
+main: com.redsifter.stackpoints.StackPoints
+api-version: '1.17'
