@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public final class StackPoints extends JavaPlugin {
+    public static String TEAMNAME1 = "PHANTOMS";
+    public static String  TEAMNAME2 = "DRAGONS";
     public static int MAXPLAYERS = 10;
     public static int MAXNUMBER = 3;
     public static int MINTIME = 200;
@@ -30,6 +32,18 @@ public final class StackPoints extends JavaPlugin {
     public static Game[] games = new Game[MAXNUMBER];
     public static FileManager fm;
 
+    public enum GAMEMODE {
+        TDM (420, 120),
+        CTF (420, 150),
+        HUNT (240, 130);
+
+        private final int time;
+        private final int limit;
+        GAMEMODE(int time, int limit){
+            this.time = time;
+            this.limit = limit;
+        }
+    }
     @Override
     public void onEnable() {
         this.getServer().getPluginManager().registerEvents(new Listen(this), this);
@@ -42,6 +56,18 @@ public final class StackPoints extends JavaPlugin {
         //Initializing config
         this.getLogger().info("Initializing config");
         this.saveDefaultConfig();
+
+        if(this.getConfig().contains("TEAMNAME1")){
+            if(this.getConfig().get("TEAMNAME1") != null) {
+                MAXPLAYERS = this.getConfig().getInt("TEAMNAME1");
+            }
+        }
+
+        if(this.getConfig().contains("TEAMNAME2")){
+            if(this.getConfig().get("TEAMNAME2") != null) {
+                MAXPLAYERS = this.getConfig().getInt("TEAMNAME2");
+            }
+        }
 
         if(this.getConfig().contains("MAXPLAYERS")){
             if(this.getConfig().get("MAXPLAYERS") != null) {
@@ -93,11 +119,11 @@ public final class StackPoints extends JavaPlugin {
     }
 
     public boolean onCommand(@Nonnull CommandSender sender, @Nonnull Command cmd, @Nonnull String label, @Nonnull String[] args) {
-        if (sender instanceof Player && label == "sp") {
+        if (sender instanceof Player && label.equals("sp")) {
             switch (args[0]) {
                 case("set"):
                     if (countGames() == MAXNUMBER) {
-                        sender.sendMessage("Too much games started at this time...\n");
+                        sender.sendMessage("Too much games set at this time...\n");
                         return true;
                     }
                     if(playerHasGame((Player) sender) != -1){
@@ -109,15 +135,51 @@ public final class StackPoints extends JavaPlugin {
                     games[game] = new Game(game,(Player) sender,this);
                     break;
                 case("start"):
-                    try {
-                        if (!games[playerHasGame((Player) sender)].start(Integer.parseInt(args[1]), Integer.parseInt(args[2]))) {
-                            sender.sendMessage("Couldn't start game, difference between the two teams is too high !\n");
-                            return false;
-                        } else {
-                            sender.sendMessage("Successfully started game n°" + (games[Integer.parseInt(args[0]) - 1].nb + 1) + " !\n");
+                    if(args.length < 2){
+                        sender.sendMessage("You must at least specify a game mode !");
+                        return true;
+                    }
+
+                    int nb = playerHasGame((Player) sender);
+                    if(nb != -1){
+                        try {
+                            int time = 0;
+                            int limit = 0;
+
+                            switch(args[1].toUpperCase()){
+                                case "TDM":
+                                    time = GAMEMODE.TDM.time;
+                                    limit = GAMEMODE.TDM.limit;
+                                    break;
+                                case "CTF":
+                                    time = GAMEMODE.CTF.time;
+                                    limit = GAMEMODE.CTF.limit;
+                                    break;
+                                case "HUNT":
+                                    time = GAMEMODE.HUNT.time;
+                                    limit = GAMEMODE.HUNT.limit;
+                                    break;
+                            }
+                            if( args.length > 2){
+                                time = Integer.parseInt(args[2]);
+                            }
+
+                            if( args.length > 3){
+                                limit = Integer.parseInt(args[3]);
+                            }
+
+                            if (!games[nb].start(args[1], time, limit)) {
+                                sender.sendMessage("Couldn't start game, difference between the two teams is too high !\n");
+                                return true;
+                            } else {
+                                sender.sendMessage("Successfully started game n°" + (nb + 1) + " !\n");
+                            }
+                        } catch (FileNotFoundException e) {
+                            throw new RuntimeException(e);
                         }
-                    } catch (FileNotFoundException e) {
-                        throw new RuntimeException(e);
+                    }
+                    else{
+                        sender.sendMessage("You don't own a game !");
                     }
                     break;
             }

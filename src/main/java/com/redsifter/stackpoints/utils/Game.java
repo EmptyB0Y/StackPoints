@@ -15,6 +15,7 @@ import org.bukkit.scoreboard.*;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 public class Game extends BukkitRunnable {
     public CustomTeam t1;
@@ -35,15 +36,17 @@ public class Game extends BukkitRunnable {
     public ArrayList<Player> players = new ArrayList<>();
     public ArrayList<Player> specs = new ArrayList<>();
     public Channel spectator = new Channel("spectators",ChatColor.GRAY);
+
     public int SIZE;
     //SCOREBOARD
-    private ScoreboardManager manager = Bukkit.getScoreboardManager();
+    private final ScoreboardManager manager = Bukkit.getScoreboardManager();
     public Scoreboard board = manager.getMainScoreboard();
-    private Objective timer = board.registerNewObjective("timer"+nb, "test", "TIMER");
+    private final Objective timer = board.registerNewObjective("timerSP"+nb, "test", "TIMER");
     private int cursor = 0;
     public Game(int n, Player gameOwner, StackPoints sp){
-        CustomTeam t1 = new CustomTeam(1, "PHANTOM");
-        CustomTeam t2 = new CustomTeam(2, "DRAGONS");
+        CustomTeam t1 = new CustomTeam(1, StackPoints.TEAMNAME1);
+        CustomTeam t2 = new CustomTeam(2, StackPoints.TEAMNAME2);
+
         nb = n;
         owner = gameOwner;
         spawn = gameOwner.getLocation();
@@ -113,50 +116,56 @@ public class Game extends BukkitRunnable {
         time--;
     }
 
-    public boolean start(int timer,int limit) throws FileNotFoundException {
-        if((t1.players.size() - t2.players.size() <= 3 || t1.players.size() - t2.players.size() >= -3) && (!t1.players.isEmpty() && !t2.players.isEmpty())) {
+    public boolean start(String mode, int timer,int limit) throws FileNotFoundException {
+        this.mode = mode;
+        if(!t1.players.isEmpty() && !t2.players.isEmpty()) {
             this.time = timer;
             this.timeset = timer;
-            this.runTaskTimer((Plugin) this.main, 0L, 20L);
+            this.runTaskTimer(this.main, 0L, 20L);
             this.hasStarted = true;
             this.SIZE = limit;
-            board.registerNewTeam(String.valueOf(nb));
-            board.getTeam(String.valueOf(nb)).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            if(mode.equals("tdm")){
+                board.registerNewTeam("spt1"+String.valueOf(nb));
+                Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+                board.registerNewTeam("spt2"+String.valueOf(nb));
+                Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+            }
+            board.registerNewTeam("spt1"+String.valueOf(nb));
+            Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+            board.registerNewTeam("spt2"+String.valueOf(nb));
+            Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
             for(Player p : t1.players){
                 StackPoints.saveinv(p);
                 p.getInventory().clear();
-                board.getTeam(String.valueOf(nb)).addEntry(p.getName());
+                Objects.requireNonNull(board.getTeam("spt1" + String.valueOf(nb))).addEntry(p.getName());
                 p.teleport(spawn);
                 p.setInvulnerable(true);
                 p.setFoodLevel(20);
                 p.setHealth(20);
                 p.setGameMode(GameMode.ADVENTURE);
                 setScoreBoard(p);
-                p.sendMessage(ChatColor.DARK_GREEN + "[!]You have 60 seconds to hide before the seekers get unleashed !\n");
-                if(mode.equals("predator")){
+                /*if(mode.equals("predator")){
                     p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20*time, 1));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20*time, 1));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20*time, 1));
                     board.getTeam(String.valueOf(nb)).setColor(ChatColor.DARK_GREEN);
-                }
+                }*/
             }
             for(Player p : t2.players){
                 StackPoints.saveinv(p);
                 p.getInventory().clear();
+                Objects.requireNonNull(board.getTeam("spt2" + String.valueOf(nb))).addEntry(p.getName());
                 p.teleport(spawn);
                 p.setInvulnerable(true);
                 p.setFoodLevel(20);
                 p.setHealth(20);
                 p.setGameMode(GameMode.ADVENTURE);
-                p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 20*60, 200));
-                p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20*60, 1));
-                if(mode.equals("predator")){
+                setScoreBoard(p);
+                /*if(mode.equals("predator")){
                     p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20*time, 1));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 20*time, 1));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 20*time, 1));
-                }
-                setScoreBoard(p);
-                p.sendMessage(ChatColor.DARK_GRAY + "[!]You have to wait 60 seconds before you can chase hiders !\n");
+                }*/
 
             }
             return true;
@@ -168,22 +177,22 @@ public class Game extends BukkitRunnable {
         if(t1.full && t2.full){
             return false;
         }
-        if(t.equals("h")){
+        if(t.equals("p")){
             if(!t1.players.contains(p) && ((t2.players.size() - t1.players.size()) <= 3 || (t2.players.size() - t1.players.size() >= -3))){
                 if(!t1.full) {
                     t1.addPlayer(p);
                     players.add(p);
-                    announcement(ChatColor.DARK_GREEN + "[+H]"+p.getName(), false);
+                    announcement(ChatColor.BLUE + "[+" + StackPoints.TEAMNAME1 + "]"+p.getName(), false);
                     return true;
                 }
             }
         }
-        else if(t.equals("s")){
+        else if(t.equals("d")){
             if(!t2.players.contains(p) && ((t2.players.size() - t1.players.size()) <= 3 || (t2.players.size() - t1.players.size() >= -3))){
                 if(!t2.full) {
                     t2.addPlayer(p);
                     players.add(p);
-                    announcement(ChatColor.RED + "[+S]"+p.getName(),false);
+                    announcement(ChatColor.RED + "[+" + StackPoints.TEAMNAME2 + "]"+p.getName(),false);
                     return true;
                 }
             }
@@ -193,7 +202,7 @@ public class Game extends BukkitRunnable {
                 if(!t1.full) {
                     t1.addPlayer(p);
                     players.add(p);
-                    announcement(ChatColor.DARK_GREEN + "[+H]"+p.getName(), false);
+                    announcement(ChatColor.DARK_GREEN + "[+" + StackPoints.TEAMNAME1 + "]"+p.getName(), false);
                     return true;
                 }
             }
@@ -203,7 +212,7 @@ public class Game extends BukkitRunnable {
                     if (!t1.full) {
                         t1.addPlayer(p);
                         players.add(p);
-                        announcement(ChatColor.DARK_GREEN + "[+H]" + p.getName(), false);
+                        announcement(ChatColor.DARK_GREEN + "[+" + StackPoints.TEAMNAME1 + "]" + p.getName(), false);
                         return true;
                     }
                 }
@@ -211,7 +220,7 @@ public class Game extends BukkitRunnable {
                     if(!t2.full) {
                         t2.addPlayer(p);
                         players.add(p);
-                        announcement(ChatColor.RED + "[+S]"+p.getName(),false);
+                        announcement(ChatColor.RED + "[+" + StackPoints.TEAMNAME2 + "]"+p.getName(),false);
                         return true;
                     }
                 }
