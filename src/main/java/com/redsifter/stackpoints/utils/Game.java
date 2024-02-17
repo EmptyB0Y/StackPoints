@@ -43,6 +43,7 @@ public class Game extends BukkitRunnable {
     public Scoreboard board = manager.getMainScoreboard();
     private final Objective timer = board.registerNewObjective("timerSP"+nb, "test", "TIMER");
     private int cursor = 0;
+
     public Game(int n, Player gameOwner, StackPoints sp){
         CustomTeam t1 = new CustomTeam(1, StackPoints.TEAMNAME1);
         CustomTeam t2 = new CustomTeam(2, StackPoints.TEAMNAME2);
@@ -51,8 +52,6 @@ public class Game extends BukkitRunnable {
         owner = gameOwner;
         spawn = gameOwner.getLocation();
         this.main = sp;
-        players.addAll(t1.players);
-        players.addAll(t2.players);
     }
 
     public void run(){
@@ -62,29 +61,10 @@ public class Game extends BukkitRunnable {
         cursor++;
 
         if(cursor == 5){
-            playersLocations();
+            //playersLocations();
             cursor = 0;
         }
-        if(time > timeset - 60){
-            for(Player p : t2.players) {
-                if (p.getLocation().distance(spawn) > 2) {
-                    p.teleport(spawn);
-                }
-            }
-        }
-        if(time == timeset - 60){
-            announcement(ChatColor.DARK_RED + "[!]SEEKERS ARE UNLEASHED[!]",false);
-            if(mode.equals("normal")) {
-                announcement(ChatColor.GOLD + "[!]THE MYSTERY CHESTS ARE AVAILABLE[!]", false);
-            }
-        }
-        if(time == timeset/2){
-            announcement(ChatColor.GOLD + "[!]THE TIMER IS HALFWAY DONE[!]",false);
-        }
-        if(time == (timeset*0.1)){
-            announcement(ChatColor.RED + "[!]THE TIMER IS ALMOST DONE[!]",false);
 
-        }
 /*        if(!t1.players.isEmpty() && t2.players.isEmpty()){
             try {
                 hidersVictory();
@@ -117,29 +97,31 @@ public class Game extends BukkitRunnable {
     }
 
     public boolean start(String mode, int timer,int limit) throws FileNotFoundException {
-        this.mode = mode;
+        this.mode = mode.toUpperCase();
         if(!t1.players.isEmpty() && !t2.players.isEmpty()) {
             this.time = timer;
             this.timeset = timer;
             this.runTaskTimer(this.main, 0L, 20L);
             this.hasStarted = true;
             this.SIZE = limit;
-            if(mode.equals("tdm")){
+            if(mode.equals("TDM") || mode.equals("CTF")){
                 board.registerNewTeam("spt1"+String.valueOf(nb));
                 Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
                 board.registerNewTeam("spt2"+String.valueOf(nb));
                 Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
             }
-            board.registerNewTeam("spt1"+String.valueOf(nb));
-            Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
-            board.registerNewTeam("spt2"+String.valueOf(nb));
-            Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
+            else if(mode.equals("HUNT")){
+                this.t1 = new CustomTeam(1, "HUNTERS");
+                this.t2 = new CustomTeam(2, "RUNNERS");
+
+                board.registerNewTeam("spt2"+String.valueOf(nb));
+                Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+            }
             for(Player p : t1.players){
                 StackPoints.saveinv(p);
                 p.getInventory().clear();
                 Objects.requireNonNull(board.getTeam("spt1" + String.valueOf(nb))).addEntry(p.getName());
                 p.teleport(spawn);
-                p.setInvulnerable(true);
                 p.setFoodLevel(20);
                 p.setHealth(20);
                 p.setGameMode(GameMode.ADVENTURE);
@@ -156,7 +138,6 @@ public class Game extends BukkitRunnable {
                 p.getInventory().clear();
                 Objects.requireNonNull(board.getTeam("spt2" + String.valueOf(nb))).addEntry(p.getName());
                 p.teleport(spawn);
-                p.setInvulnerable(true);
                 p.setFoodLevel(20);
                 p.setHealth(20);
                 p.setGameMode(GameMode.ADVENTURE);
@@ -177,8 +158,9 @@ public class Game extends BukkitRunnable {
         if(t1.full && t2.full){
             return false;
         }
+        this.players.add(p);
         if(t.equals("p")){
-            if(!t1.players.contains(p) && ((t2.players.size() - t1.players.size()) <= 3 || (t2.players.size() - t1.players.size() >= -3))){
+            if(!t1.players.contains(p)){
                 if(!t1.full) {
                     t1.addPlayer(p);
                     players.add(p);
@@ -188,7 +170,7 @@ public class Game extends BukkitRunnable {
             }
         }
         else if(t.equals("d")){
-            if(!t2.players.contains(p) && ((t2.players.size() - t1.players.size()) <= 3 || (t2.players.size() - t1.players.size() >= -3))){
+            if(!t2.players.contains(p)){
                 if(!t2.full) {
                     t2.addPlayer(p);
                     players.add(p);
@@ -366,7 +348,7 @@ public class Game extends BukkitRunnable {
 
     public void setScoreBoard(Player p) {
         this.timer.setDisplaySlot(DisplaySlot.SIDEBAR);
-        this.timer.setDisplayName(ChatColor.DARK_PURPLE + "H&S");
+        this.timer.setDisplayName(ChatColor.GRAY + "STACK-POINTS");
         Score score = this.timer.getScore(ChatColor.DARK_GREEN + "TIMER");
         score.setScore(this.time);
         p.setScoreboard(this.board);
