@@ -45,8 +45,8 @@ public class Game extends BukkitRunnable {
     private int cursor = 0;
 
     public Game(int n, Player gameOwner, StackPoints sp){
-        CustomTeam t1 = new CustomTeam(1, StackPoints.TEAMNAME1);
-        CustomTeam t2 = new CustomTeam(2, StackPoints.TEAMNAME2);
+        CustomTeam t1 = new CustomTeam(0, StackPoints.TEAMNAME1, ChatColor.BLUE);
+        CustomTeam t2 = new CustomTeam(0, StackPoints.TEAMNAME2, ChatColor.RED);
 
         nb = n;
         owner = gameOwner;
@@ -93,6 +93,9 @@ public class Game extends BukkitRunnable {
                 e.printStackTrace();
             }
         }*/
+        if(time == 0){
+
+        }
         time--;
     }
 
@@ -111,8 +114,9 @@ public class Game extends BukkitRunnable {
                 Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.FOR_OWN_TEAM);
             }
             else if(mode.equals("HUNT")){
-                this.t1 = new CustomTeam(1, "HUNTERS");
-                this.t2 = new CustomTeam(2, "RUNNERS");
+
+                this.t1 = new CustomTeam(0, "HUNTERS", ChatColor.RED);
+                this.t2 = new CustomTeam(0, "RUNNERS", ChatColor.DARK_GREEN);
 
                 board.registerNewTeam("spt2"+String.valueOf(nb));
                 Objects.requireNonNull(board.getTeam(String.valueOf(nb))).setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
@@ -164,7 +168,7 @@ public class Game extends BukkitRunnable {
                 if(!t1.full) {
                     t1.addPlayer(p);
                     players.add(p);
-                    announcement(ChatColor.BLUE + "[+" + StackPoints.TEAMNAME1 + "]"+p.getName(), false);
+                    announcement(ChatColor.BLUE + "[+" + t1.name + "]"+p.getName(), false);
                     return true;
                 }
             }
@@ -174,7 +178,7 @@ public class Game extends BukkitRunnable {
                 if(!t2.full) {
                     t2.addPlayer(p);
                     players.add(p);
-                    announcement(ChatColor.RED + "[+" + StackPoints.TEAMNAME2 + "]"+p.getName(),false);
+                    announcement(ChatColor.RED + "[+" + t2.name + "]"+p.getName(),false);
                     return true;
                 }
             }
@@ -211,44 +215,43 @@ public class Game extends BukkitRunnable {
         return false;
     }
 
-    public boolean remPlayer(Player p,Boolean seeker) throws FileNotFoundException {
+    public boolean remPlayer(Player p,Boolean spec) throws FileNotFoundException {
         if (players.contains(p)) {
             players.remove(p);
+            if(spec && !specs.contains(p)) {
+                specs.add(p);
+                spectator.addPlayer(p);
+                p.sendTitle("[SP]", "[!] SPECTATOR MODE [!]", 1, 60, 1);
+                p.sendMessage(ChatColor.GRAY + "SPECTATOR MODE : Type /sp leave to leave the game");
+                p.setGameMode(GameMode.SPECTATOR);
+            }
+            else if(specs.contains(p)){
+                specs.remove(p);
+                spectator.remPlayer(p);
+            }
+            p.setInvulnerable(false);
+            p.getInventory().clear();
+            StackPoints.loadinv(p);
+            p.teleport(spawn);
+
+            //p.getActivePotionEffects().clear();
+            for (PotionEffect effect : p.getActivePotionEffects()) {
+                p.removePotionEffect(effect.getType());
+            }
             if (t1.players.contains(p)) {
                 t1.remPlayer(p.getName());
-                if (board.getTeam("" + nb) != null) {
-                    board.getTeam("" + nb).removeEntry(p.getName());
+                if (board.getTeam("spt1" + nb) != null) {
+                    board.getTeam("spt1" + nb).removeEntry(p.getName());
                 }
-                announcement(ChatColor.DARK_GREEN + "[-H]" + p.getName(),false);
-                if(seeker) {
-                    specs.add(p);
-                    spectator.addPlayer(p);
-                    p.sendTitle("[HS]","[!] SPECTATOR MODE [!]",1,60,1);
-                    p.sendMessage(ChatColor.GRAY + "SPECTATOR MODE : Type /hsleave to leave the game");
-                    p.setGameMode(GameMode.SPECTATOR);
-                }else {
-                    p.setGameMode(GameMode.SURVIVAL);
-                }
-                p.setInvulnerable(false);
-                p.getInventory().clear();
-                //p.getActivePotionEffects().clear();
-                for (PotionEffect effect : p.getActivePotionEffects()) {
-                    p.removePotionEffect(effect.getType());
-                }
-                StackPoints.loadinv(p);
+                announcement(ChatColor.DARK_GREEN + "[-"+ t1.name +"]" + p.getName(),false);
                 return true;
 
             } else if (t2.players.contains(p)) {
                 t2.remPlayer(p.getName());
-                announcement(ChatColor.RED + "[-S]" + p.getName(),false);
-                p.setGameMode(GameMode.SURVIVAL);
-                p.setInvulnerable(false);
-                p.getInventory().clear();
-                //p.getActivePotionEffects().clear();
-                for (PotionEffect effect : p.getActivePotionEffects()) {
-                    p.removePotionEffect(effect.getType());
+                if (board.getTeam("spt2" + nb) != null) {
+                    board.getTeam("spt2" + nb).removeEntry(p.getName());
                 }
-                StackPoints.loadinv(p);
+                announcement(ChatColor.DARK_GREEN + "[-"+ t2.name +"]" + p.getName(),false);
                 return true;
             }
         }
@@ -272,6 +275,9 @@ public class Game extends BukkitRunnable {
         }
     }
 
+    public void assertVictory() throws FileNotFoundException {
+        StackPoints.cancelGame(nb);
+    }
     /*public void hidersVictory() throws FileNotFoundException {
         announcement(ChatColor.GOLD + "The hiders won ! Congratulations :\n",false);
         for(Player p : t1.players){

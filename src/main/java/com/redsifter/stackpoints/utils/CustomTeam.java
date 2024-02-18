@@ -17,16 +17,13 @@ public class CustomTeam {
     public String name;
     public boolean full = false;
 
-    public CustomTeam(int number, String nm){
+    public CustomTeam(int number, String nm, ChatColor color){
         nb = number;
         name = nm;
-        ChatColor color = ChatColor.GOLD;
-        if(name.equals("HIDERS")){
-            color = ChatColor.DARK_GREEN;
+        if (color == null) {
+            color = ChatColor.GOLD;
         }
-        else if(name.equals("SEEKERS")){
-            color = ChatColor.RED;
-        }
+
         ch = new Channel(nm,color);
     }
 

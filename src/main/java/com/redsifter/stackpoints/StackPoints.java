@@ -37,8 +37,8 @@ public final class StackPoints extends JavaPlugin {
         CTF (420, 150),
         HUNT (240, 130);
 
-        private final int time;
-        private final int limit;
+        public final int time;
+        public final int limit;
         GAMEMODE(int time, int limit){
             this.time = time;
             this.limit = limit;
@@ -231,60 +231,36 @@ public final class StackPoints extends JavaPlugin {
         return -1;
     }
     public static void cancelGame(int nb) throws FileNotFoundException {
-        if(games[nb-1] != null){
-            if(games[nb-1].hasStarted) {
-                games[nb - 1].cancel();
+        if(games[nb] != null){
+            if(games[nb].hasStarted) {
+                games[nb].cancel();
             }
-            for(Player p : games[nb-1].t1.players){
-                p.getInventory().clear();
-                loadinv(p);
-                /*if (games[nb - 1].savedInventories.get(p) != null) {
+            for(Player p : games[nb].players){
 
-                    if (!games[nb - 1].savedInventories.get(p).isEmpty()) {
-                        for (ItemStack it : games[nb - 1].savedInventories.get(p).getStorageContents()) {
-                            if (it != null) {
-                                p.getInventory().addItem(it);
-                            }
-                        }
-                    }
-                }*/
-
-                p.setGameMode(GameMode.SURVIVAL);
-                p.setInvulnerable(false);
-            }
-            for(Player p : games[nb-1].t2.players){
                 p.getInventory().clear();
                 for (PotionEffect effect : p.getActivePotionEffects()) {
                     p.removePotionEffect(effect.getType());
                 }
                 loadinv(p);
-                /*if (games[nb - 1].savedInventories.size() > 0) {
-                    if (!games[nb - 1].savedInventories.get(p).isEmpty()) {
-                        for (ItemStack it : games[nb - 1].savedInventories.get(p).getStorageContents()) {
-                            if (it != null) {
-                                p.getInventory().addItem(it);
-                            }
-                        }
-                    }
-                }*/
 
                 p.setGameMode(GameMode.SURVIVAL);
                 p.setInvulnerable(false);
+                p.teleport(games[nb].spawn);
             }
 
-            for(Player p : games[nb-1].specs){
-                p.teleport(games[nb-1].spawn);
+            for(Player p : games[nb].specs){
+                p.teleport(games[nb].spawn);
                 p.setGameMode(GameMode.SURVIVAL);
             }
 
-            for(Team t : games[nb-1].board.getTeams()) {
+            for(Team t : games[nb].board.getTeams()) {
                 t.unregister();
             }
-            games[nb-1].t1.flush();
-            games[nb-1].t2.flush();
-            games[nb-1].delScoreBoard();
-            games[nb-1] = null;
-            ArrayUtils.removeElement(games, games[nb-1]);
+            games[nb].t1.flush();
+            games[nb].t2.flush();
+            games[nb].delScoreBoard();
+            games[nb] = null;
+            ArrayUtils.removeElement(games, games[nb]);
             System.gc();
         }
     }
